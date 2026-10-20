@@ -193,22 +193,9 @@ Accepts raw JSON from `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)` or standard text
 
 ---
 
-## 🌐 Free Cloud Deployment
-
-QuerySleuth can be deployed for free in under two minutes:
-
-- **Render**: Connect your GitHub repository and select [`render.yaml`](render.yaml) for 1-click deployment on Render's free tier.
-- **Koyeb / Railway**: Select **Dockerfile** as the build method.
-
-Detailed instructions are available in the [Cloud Deployment Guide](docs/deployment.md).
-
----
-
 ## 🔒 Security & Privacy Notice
 
 - **No Credentials Stored**: QuerySleuth does not store database credentials, passwords, or connection strings.
-- **No Remote Telemetry**: The application operates completely within your own network or container.
-- **Safe by Default**: Execution plans are parsed and evaluated in memory with zero external API calls.
 
 ---
 
