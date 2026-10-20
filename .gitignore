@@ -1,0 +1,67 @@
+# ==========================================
+# QuerySleuth Git Ignore
+# ==========================================
+
+# Compiled & Build Artifacts (Maven)
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.original
+
+# Secrets, Credentials & Environment Configs
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.keystore
+*.credentials
+credentials.json
+secrets.*
+id_rsa*
+
+# Local Database Data & Volume Storage
+pgdata/
+*.sqlite
+*.db
+
+# Logs & Temporary Files
+*.log
+logs/
+temp/
+tmp/
+*.tmp
+
+# Packaging Archives
+*.zip
+*.tar.gz
+*.rar
+
+# IDE & Editor Configurations
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+*.sublime-project
+*.sublime-workspace
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Chrome Extension (Separate Artifact / Future Release)
+extension/

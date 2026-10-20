@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: querysleuth
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: JAVA_OPTS
+        value: "-XX:MaxRAMPercentage=75.0 -XX:+UseSerialGC"
+    healthCheckPath: /api/v1/health

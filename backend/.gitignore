@@ -1,0 +1,24 @@
+# Maven Build Output
+target/
+*.jar
+*.war
+*.original
+*.class
+
+# Logs
+*.log
+logs/
+
+# IDE Files
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Environment & Secrets
+.env
+.env.*
+*.credentials
+credentials.json

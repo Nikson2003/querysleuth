@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuerySleuth — PostgreSQL Diagnostics &amp; Execution Plan Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0ea5e9">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Navigation Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 21l-4.35-4.35"/>
+            <path d="M11 19a8 8 0 100-16 8 8 0 000 16z"/>
+            <path d="M11 8v6M8 11h6"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>QuerySleuth</h1>
+          <span class="brand-tag">PostgreSQL Diagnostics</span>
+        </div>
+      </div>
+
+      <nav class="module-nav">
+        <button class="nav-tab active" data-module="plan-explorer">
+          <span class="tab-indicator"></span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+          Plan Explorer
+        </button>
+        <button class="nav-tab disabled" title="Coming in Module 2">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          Function Investigator
+          <span class="badge-soon">Week 3</span>
+        </button>
+        <button class="nav-tab disabled" title="Coming in Module 3">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Error Investigator
+          <span class="badge-soon">Week 5</span>
+        </button>
+      </nav>
+
+      <div class="header-status">
+        <div class="status-indicator online"></div>
+        <span id="healthStatusText">Spring Boot: Connected</span>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Input & Samples Drawer / Column -->
+      <section class="plan-input-section">
+        <div class="section-header">
+          <h2>1. Input Execution Plan</h2>
+          <div class="samples-dropdown-wrapper">
+            <label for="sampleSelector">Load Preset:</label>
+            <select id="sampleSelector" class="form-select">
+              <option value="">-- Choose Sample Plan --</option>
+              <option value="sample_seq_scan">1. Massive Filter Discard (Seq Scan on Tariff)</option>
+              <option value="sample_nested_loop">2. Repeated Loop Bottleneck (Nested Loop Join)</option>
+              <option value="sample_cardinality">3. Severe Cardinality Mismatch (3000x error)</option>
+              <option value="sample_disk_spill">4. Memory Exhaustion &amp; Disk Spill (Sort)</option>
+              <option value="sample_function_scan">5. Stored Procedure Function Scan (Standard Text Format)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="editor-container">
+          <div class="editor-toolbar">
+            <span class="toolbar-hint">Paste plan output: <code>FORMAT JSON</code> or standard text <code>EXPLAIN ANALYZE</code></span>
+            <div class="toolbar-actions">
+              <button id="btnClear" class="btn-ghost" title="Clear input">Clear</button>
+              <button id="btnFormat" class="btn-ghost" title="Format JSON">Format</button>
+            </div>
+          </div>
+          <textarea id="planInput" spellcheck="false" placeholder='Paste your PostgreSQL execution plan here (JSON or standard text), or select a preset above...'></textarea>
+        </div>
+
+        <div class="action-bar">
+          <button id="btnAnalyze" class="btn-primary">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            Analyze Plan
+          </button>
+          <span id="analysisTimer" class="analysis-status-text"></span>
+        </div>
+      </section>
+
+      <!-- Analysis Results Section (Rendered dynamically) -->
+      <section id="resultsSection" class="results-section hidden">
+        <!-- Metric Cards Grid -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <span class="metric-label">Execution Time</span>
+            <div class="metric-value-row">
+              <span id="metricExecTime" class="metric-value">--</span>
+              <span class="metric-unit">ms</span>
+            </div>
+            <span id="metricPlanningTime" class="metric-sub">Planning: -- ms</span>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-label">Total Planner Cost</span>
+            <div class="metric-value-row">
+              <span id="metricTotalCost" class="metric-value">--</span>
+            </div>
+            <span id="metricNodesCount" class="metric-sub">-- nodes in tree</span>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-label">Shared Buffer Activity</span>
+            <div class="metric-value-row">
+              <span id="metricBufferHits" class="metric-value text-emerald">--</span>
+              <span class="metric-unit">hits</span>
+            </div>
+            <span id="metricBufferReads" class="metric-sub text-amber">-- disk reads</span>
+          </div>
+
+          <div class="metric-card highlight-card">
+            <span class="metric-label">Analysis Findings</span>
+            <div class="metric-value-row">
+              <span id="metricFindingsTotal" class="metric-value text-cyan">0</span>
+              <span class="metric-unit">detected</span>
+            </div>
+            <div id="findingsPills" class="findings-pills"></div>
+          </div>
+        </div>
+
+        <!-- Diagnostic Limitations Notice (if any) -->
+        <div id="limitationsBanner" class="limitations-banner hidden">
+          <div class="limitations-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div class="limitations-content">
+            <h4>Plan Limitation Warnings</h4>
+            <ul id="limitationsList"></ul>
+          </div>
+        </div>
+
+        <!-- Split View: Interactive Plan Tree + Findings & Node Inspector -->
+        <div class="workbench-layout">
+          <!-- Left Column: Interactive Tree -->
+          <div class="workbench-pane tree-pane">
+            <div class="pane-header">
+              <div class="pane-title">
+                <h3>Execution Plan Tree</h3>
+                <span class="pane-subtitle">Click any node to inspect all PostgreSQL properties</span>
+              </div>
+              <div class="tree-controls">
+                <button id="btnExpandAll" class="btn-tiny">Expand All</button>
+                <button id="btnCollapseAll" class="btn-tiny">Collapse All</button>
+              </div>
+            </div>
+            <div id="planTreeContainer" class="plan-tree-scrollable"></div>
+          </div>
+
+          <!-- Right Column: Findings & Node Inspector Tabs -->
+          <div class="workbench-pane detail-pane">
+            <div class="tab-header">
+              <button class="detail-tab active" data-tab="findings-tab">
+                Findings (<span id="findingsTabCount">0</span>)
+              </button>
+              <button class="detail-tab" data-tab="plain-english-tab">
+                💡 Plain English Guide
+              </button>
+              <button class="detail-tab" data-tab="charts-tab">
+                📊 Visual Charts
+              </button>
+              <button class="detail-tab" data-tab="inspector-tab">
+                Node Inspector
+              </button>
+              <button class="detail-tab" data-tab="raw-tab">
+                Raw JSON
+              </button>
+            </div>
+
+            <!-- Tab 1: Findings List -->
+            <div id="findings-tab" class="tab-content active">
+              <div class="findings-filter-bar">
+                <span>Filter by Severity:</span>
+                <div class="filter-pills">
+                  <button class="filter-btn active" data-severity="ALL">All</button>
+                  <button class="filter-btn" data-severity="HIGH">High</button>
+                  <button class="filter-btn" data-severity="MEDIUM">Medium</button>
+                  <button class="filter-btn" data-severity="LOW">Low</button>
+                </div>
+              </div>
+              <div id="findingsContainer" class="findings-list"></div>
+            </div>
+
+            <!-- Tab 2: Plain English Guide -->
+            <div id="plain-english-tab" class="tab-content">
+              <div id="plainEnglishContent" class="plain-english-container"></div>
+            </div>
+
+            <!-- Tab 3: Visual Charts -->
+            <div id="charts-tab" class="tab-content">
+              <div class="charts-grid">
+                <div class="chart-card">
+                  <h4>Memory &amp; Buffer Cache Allocation</h4>
+                  <p class="chart-desc">Shows how much data was read from RAM vs Temporary Tables vs Physical Disk.</p>
+                  <div class="chart-wrapper">
+                    <canvas id="bufferChartCanvas"></canvas>
+                    <div id="bufferChartFallback" class="chart-fallback hidden"></div>
+                  </div>
+                </div>
+
+                <div class="chart-card">
+                  <h4>Planner Predicted Rows vs Actual Result</h4>
+                  <p class="chart-desc">Compares the optimizer's expected cardinality against reality.</p>
+                  <div class="chart-wrapper">
+                    <canvas id="rowsChartCanvas"></canvas>
+                    <div id="rowsChartFallback" class="chart-fallback hidden"></div>
+                  </div>
+                </div>
+
+                <div class="chart-card">
+                  <h4>Time Breakdown (ms)</h4>
+                  <p class="chart-desc">Execution time vs Planning time.</p>
+                  <div class="chart-wrapper">
+                    <canvas id="timeChartCanvas"></canvas>
+                    <div id="timeChartFallback" class="chart-fallback hidden"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 4: Node Inspector -->
+            <div id="inspector-tab" class="tab-content">
+              <div id="inspectorPlaceholder" class="inspector-empty">
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <p>Select a node from the Plan Tree to inspect complete runtime metrics, buffer statistics, filter predicates, and raw properties.</p>
+              </div>
+              <div id="inspectorDetails" class="inspector-details hidden"></div>
+            </div>
+
+            <!-- Tab 5: Raw JSON -->
+            <div id="raw-tab" class="tab-content">
+              <pre id="rawJsonView" class="raw-json-block"></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <span>QuerySleuth v0.0.1 &bull; PostgreSQL Performance &amp; SQL Diagnostics Tool</span>
+      <div class="footer-links">
+        <span>Week 1 Milestone Completed: Spring Boot REST API &bull; Plan Parser &bull; Rule Engine</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+[
+  {
+    "Plan": {
+      "Node Type": "Seq Scan",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Relation Name": "tariff",
+      "Schema": "public",
+      "Alias": "tariff",
+      "Startup Cost": 0.00,
+      "Total Cost": 3845.00,
+      "Plan Rows": 120,
+      "Plan Width": 64,
+      "Actual Startup Time": 0.024,
+      "Actual Total Time": 18.420,
+      "Actual Rows": 150,
+      "Actual Loops": 1,
+      "Filter": "((origin_port = 'ANR'::text) AND (destination_port = 'NYC'::text))",
+      "Rows Removed by Filter": 99850,
+      "Shared Hit Blocks": 1845,
+      "Shared Read Blocks": 500,
+      "Shared Dirtied Blocks": 0,
+      "Shared Written Blocks": 0,
+      "Local Hit Blocks": 0,
+      "Local Read Blocks": 0,
+      "Temp Read Blocks": 0,
+      "Temp Written Blocks": 0
+    },
+    "Planning Time": 0.185,
+    "Triggers": [],
+    "Execution Time": 18.512
+  }
+]

@@ -1,0 +1,12 @@
+**/.git
+**/.gitignore
+**/target
+**/.idea
+**/.vscode
+**/*.iml
+**/sample-data
+**/docs
+**/extension
+**/*.md
+**/*.ps1
+**/*.zip
